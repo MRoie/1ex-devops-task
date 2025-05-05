@@ -1,5 +1,6 @@
 fastapi
 uvicorn[standard]
-psycopg[binary]
+psycopg2
 SQLAlchemy>=2
 python-dotenv
+email-validator
