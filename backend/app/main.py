@@ -10,8 +10,11 @@ from . import models, schemas
 app = FastAPI()
 
 # Initialize database on app startup, not during import
+# This will be overridden in test mode with a test-specific database
 @app.on_event("startup")
 async def startup_event():
+    # Only initialize the database if not in test mode
+    # Tests will handle their own database setup
     init_db()
 
 # Dependency
