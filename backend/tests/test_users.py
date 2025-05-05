@@ -8,8 +8,11 @@ from app.database import Base
 from app.main import app, get_db
 from app.models import User
 
-# Always use SQLite for tests
-TEST_DATABASE_URL = "sqlite:///:memory:"
+# Use a file-based SQLite database for tests to ensure persistence between connections
+# For CI environments, we'll use a file that will exist for the duration of the test run
+TEST_DATABASE_URL = "sqlite:///./test.db"
+
+# Create engine with a specific URL and connect_args
 engine = create_engine(
     TEST_DATABASE_URL,
     connect_args={"check_same_thread": False}
@@ -18,16 +21,28 @@ engine = create_engine(
 # Create the session factory for tests
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-@pytest.fixture
-def test_db():
-    # Create test database tables
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_db():
+    # Create tables at the beginning of the test session
     Base.metadata.create_all(bind=engine)
     yield
-    # Drop test database tables after tests
+    # Clean up after all tests are done
     Base.metadata.drop_all(bind=engine)
+    # Remove the test database file
+    if os.path.exists("./test.db"):
+        os.remove("./test.db")
+
+@pytest.fixture(autouse=True)
+def clean_tables():
+    # Start with a fresh table before each test
+    with TestingSessionLocal() as db:
+        # Delete all existing data
+        db.query(User).delete()
+        db.commit()
+    yield
 
 @pytest.fixture
-def client(test_db):
+def client():
     # Override the get_db dependency to use the test database
     def override_get_db():
         try:
