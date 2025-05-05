@@ -3,18 +3,20 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import List
 import uuid
-from .database import engine, Base
+from .database import engine, Base, SessionLocal, init_db
 from . import models, schemas
-from sqlalchemy.orm import sessionmaker
 
-# Create all tables
-Base.metadata.create_all(bind=engine)
-
+# Initialize FastAPI app
 app = FastAPI()
+
+# Initialize database on app startup, not during import
+@app.on_event("startup")
+async def startup_event():
+    init_db()
 
 # Dependency
 def get_db():
-    db = sessionmaker(autocommit=False, autoflush=False, bind=engine)()
+    db = SessionLocal()
     try:
         yield db
     finally:
