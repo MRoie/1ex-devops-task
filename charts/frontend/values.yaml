@@ -14,7 +14,7 @@ ingress:
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
   hosts:
-    - host: chart-example.local
+    - host: 1ex.hire.roie.local
       paths:
         - path: /
           pathType: Prefix

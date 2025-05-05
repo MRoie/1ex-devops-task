@@ -1,6 +1,6 @@
 # Global values shared across all subchart
 global:
-  domain: chart-example.local
+  domain: 1ex.hire.roie.local
   environment: production
 
 postgres:
@@ -24,7 +24,7 @@ postgres:
 backend:
   enabled: true
   image:
-    repository: backend
+    repository: backend  # Changed from localhost:5000/backend
     tag: latest
     pullPolicy: IfNotPresent
   service:
@@ -36,7 +36,7 @@ backend:
     annotations:
       kubernetes.io/ingress.class: nginx
     hosts:
-      - host: "${global.domain}"
+      - host: 1ex.hire.roie.local
         paths:
           - path: /api
             pathType: Prefix
@@ -55,7 +55,7 @@ backend:
 frontend:
   enabled: true
   image:
-    repository: frontend
+    repository: frontend  # Changed from localhost:5000/frontend
     tag: latest
     pullPolicy: IfNotPresent
   service:
@@ -67,7 +67,7 @@ frontend:
     annotations:
       nginx.ingress.kubernetes.io/rewrite-target: /
     hosts:
-      - host: "${global.domain}"
+      - host: 1ex.hire.roie.local
         paths:
           - path: /
             pathType: Prefix

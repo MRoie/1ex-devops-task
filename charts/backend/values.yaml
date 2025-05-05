@@ -13,7 +13,7 @@ ingress:
   className: nginx
   annotations: {}
   hosts:
-    - host: chart-example.local
+    - host: 1ex.hire.roie.local
       paths:
         - path: /api
           pathType: Prefix
