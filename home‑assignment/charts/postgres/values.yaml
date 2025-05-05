@@ -1,0 +1,31 @@
+# Default values for postgres chart
+image:
+  repository: postgres
+  tag: 15.3
+  pullPolicy: IfNotPresent
+
+service:
+  port: 5432
+
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: ""
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+# Database configuration
+database:
+  name: app
+  user: postgres
+  password: postgres
+  
+# Init script that creates the tables
+initScript:
+  enabled: true

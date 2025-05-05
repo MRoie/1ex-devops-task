@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-backend-config
+  labels:
+    app: backend
+    chart: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+data:
+  # Additional non-sensitive configuration can be added here
+  APP_ENV: {{ .Values.env.environment | default "production" | quote }}
+  APP_DEBUG: {{ .Values.env.debug | default "false" | quote }}

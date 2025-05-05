@@ -1,0 +1,41 @@
+# Default values for backend chart
+image:
+  repository: backend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8000
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /api
+          pathType: Prefix
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+# Database connection
+database:
+  host: postgres
+  port: 5432
+  name: app
+  user: postgres
+  password: postgres
+  existingSecret: ""  # Set this to use an existing secret instead of creating one
+
+# Environment variables configuration
+env:
+  environment: production
+  debug: "false"

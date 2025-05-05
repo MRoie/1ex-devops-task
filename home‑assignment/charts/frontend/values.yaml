@@ -1,0 +1,32 @@
+# Default values for frontend chart
+image:
+  repository: frontend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  port: 80
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# API Configuration - to proxy requests to backend
+api:
+  url: /api
