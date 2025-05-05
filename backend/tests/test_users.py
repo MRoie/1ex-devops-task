@@ -1,19 +1,61 @@
 import pytest
 import uuid
 import os
+import time
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import OperationalError
 from app.database import Base
 from app.main import app, get_db
 from app.models import User
 
-# Setup test database with PostgreSQL
-TEST_DATABASE_URL = os.getenv(
-    "TEST_DATABASE_URL", 
-    "postgresql://postgres:postgres@localhost:5432/test_app"
-)
-engine = create_engine(TEST_DATABASE_URL)
+# Get test database URL from environment variables with fallbacks
+# 1. TEST_DATABASE_URL - Explicit test database URL
+# 2. DATABASE_URL - Use the same database as the app but with a test_ prefix
+# 3. Default to PostgreSQL on localhost
+# 4. Fall back to SQLite if PostgreSQL is not available
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+
+if not TEST_DATABASE_URL:
+    app_db_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/app")
+    if "postgresql://" in app_db_url:
+        # Use the same PostgreSQL server but with a test database
+        TEST_DATABASE_URL = app_db_url.replace("/app", "/test_app")
+    else:
+        TEST_DATABASE_URL = app_db_url
+
+# Try to connect to PostgreSQL; if it fails, use SQLite in-memory database
+max_retries = 3
+retry_delay = 2
+engine = None
+
+for attempt in range(max_retries):
+    try:
+        engine = create_engine(TEST_DATABASE_URL)
+        # Test connection
+        with engine.connect() as conn:
+            pass
+        print(f"Successfully connected to test database: {TEST_DATABASE_URL}")
+        break
+    except OperationalError as e:
+        print(f"Attempt {attempt + 1}/{max_retries} to connect to {TEST_DATABASE_URL} failed: {e}")
+        if attempt < max_retries - 1:
+            if "postgresql://" in TEST_DATABASE_URL:
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                # If it's not PostgreSQL, don't retry
+                break
+        else:
+            print("Falling back to SQLite in-memory database")
+            TEST_DATABASE_URL = "sqlite:///:memory:"
+            engine = create_engine(
+                TEST_DATABASE_URL,
+                connect_args={"check_same_thread": False}
+            )
+
+# Now we have a working engine, create the session factory
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 @pytest.fixture
