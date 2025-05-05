@@ -7,4 +7,4 @@ backend:
 dev: frontend backend
 
 test:
-	bun test && pytest -q
+	npm run test && pytest -q
