@@ -19,8 +19,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  BACKEND_IMAGE: ${{ github.repository }}/backend:latest
-  FRONTEND_IMAGE: ${{ github.repository }}/frontend:latest
+  BACKEND_IMAGE: ${{ github.repository_owner | lower }}/${{ github.event.repository.name | lower }}/backend:latest
+  FRONTEND_IMAGE: ${{ github.repository_owner | lower }}/${{ github.event.repository.name | lower }}/frontend:latest
   KUBERNETES_VERSION: v1.27.3
   KIND_VERSION: v0.20.0
   HELM_VERSION: v3.13.1
