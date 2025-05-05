@@ -26,7 +26,7 @@ update-helm:
 
 # Deploy to Minikube
 deploy-minikube: load-images update-helm
-	helm upgrade --install app ./charts/umbrella \
+	helm upgrade --install umbrella ./charts/umbrella \
 	  --set backend.image.repository=localhost:5000/backend \
 	  --set backend.image.tag=latest \
 	  --set backend.image.pullPolicy=Never \
