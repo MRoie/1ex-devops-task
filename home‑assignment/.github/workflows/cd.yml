@@ -1,12 +1,116 @@
-name: CD
+name: CD Pipeline
+
 on:
   workflow_run:
-    workflows: [CI]
-    types: [completed]
+    workflows: ["CI Pipeline"]
     branches: [main]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ${{ github.repository }}/backend:latest
+  FRONTEND_IMAGE: ${{ github.repository }}/frontend:latest
+  KUBERNETES_VERSION: v1.27.3
+  KIND_VERSION: v0.20.0
+  HELM_VERSION: v3.13.1
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    
     steps:
-      - run: echo "CD placeholder"
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up kind
+        uses: helm/kind-action@v1.8.0
+        with:
+          version: ${{ env.KIND_VERSION }}
+          cluster_name: kind-cluster
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Pull latest images
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}
+          docker pull ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}
+      
+      - name: Load images into Kind
+        run: |
+          kind load docker-image ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }} --name kind-cluster
+          kind load docker-image ${{ env.FRONTEND_IMAGE }} --name kind-cluster
+
+      - name: Install NGINX Ingress Controller
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=90s
+
+      - name: Update Helm dependencies
+        working-directory: ./home-assignment/charts/umbrella
+        run: helm dependency update
+
+      - name: Deploy application with Helm
+        working-directory: ./home-assignment
+        run: |
+          helm upgrade --install app-${{ github.event.inputs.environment || 'production' }} ./charts/umbrella \
+            --set backend.image.repository=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }} \
+            --set frontend.image.repository=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }} \
+            --set global.domain=app.local \
+            --set global.environment=${{ github.event.inputs.environment || 'production' }} \
+            --wait --timeout 5m
+
+      - name: Configure local hosts for testing
+        run: |
+          echo "127.0.0.1 app.local" | sudo tee -a /etc/hosts
+
+      - name: Wait for services to be ready
+        run: |
+          kubectl wait --for=condition=ready pod --selector=app.kubernetes.io/name=backend --timeout=120s
+          kubectl wait --for=condition=ready pod --selector=app.kubernetes.io/name=frontend --timeout=120s
+          kubectl wait --for=condition=ready pod --selector=app.kubernetes.io/name=postgres --timeout=120s
+
+      - name: Run smoke tests
+        working-directory: ./home-assignment
+        run: |
+          # Wait for ingress to be ready
+          echo "Waiting for endpoints to be available..."
+          timeout 120s bash -c 'until curl -s -f http://app.local/api/health; do sleep 2; done'
+          
+          # Test frontend is accessible
+          echo "Testing frontend access..."
+          curl -s -f http://app.local/ > /dev/null
+          
+          # Test backend API endpoints
+          echo "Testing backend API..."
+          curl -s -f http://app.local/api/users > /dev/null
+          
+          echo "Smoke tests completed successfully!"
