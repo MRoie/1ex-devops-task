@@ -89,7 +89,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSuccess, onCancel }) => {
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 mb-4">
-      <h2 className="text-xl font-semibold mb-4">{user ? 'Edit User' : 'Add New User'}</h2>
+      <h2 className="text-xl font-semibold mb-4 text-[#001424]">{user ? 'Edit User' : 'Add New User'}</h2>
       
       {errors.general && (
         <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 text-red-700">
@@ -107,7 +107,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSuccess, onCancel }) => {
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#0054aa] ${
               errors.name ? 'border-red-500' : 'border-gray-300'
             }`}
             disabled={isSubmitting}
@@ -124,7 +124,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSuccess, onCancel }) => {
             id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#0054aa] ${
               errors.email ? 'border-red-500' : 'border-gray-300'
             }`}
             disabled={isSubmitting}
@@ -143,7 +143,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSuccess, onCancel }) => {
           </button>
           <button
             type="submit"
-            className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-400"
+            className="px-4 py-2 text-white bg-[#001424] rounded-md hover:bg-[#002c4a] focus:outline-none focus:ring-2 focus:ring-[#0054aa] disabled:bg-[#667b88]"
             disabled={isSubmitting}
           >
             {isSubmitting ? (
