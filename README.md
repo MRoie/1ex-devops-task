@@ -125,21 +125,28 @@ This project includes a CI/CD pipeline that handles:
 
 1. Building the application images
 2. Running tests
-3. Pushing to a container registry
+3. Loading images to Minikube
 4. Deploying to Kubernetes
 
 To run the pipeline:
 
 ```bash
-# Set up your environment variables
+# Set up your environment variables (if needed for external registries)
 export DOCKER_USERNAME=your-username
 export DOCKER_PASSWORD=your-password
 
-# For local pipeline testing, you can use:
-make ci-build
-make ci-test
-make ci-push
-make ci-deploy
+# For local pipeline testing with Minikube, you can use:
+make build-images      # Build Docker images locally
+make load-images       # Build and load images into Minikube
+make update-helm       # Update Helm dependencies
+make deploy-minikube   # Deploy to Minikube using local images
+make minikube-cd       # Full CD process for Minikube
+
+# For development:
+make dev               # Run both frontend and backend in development mode
+make frontend          # Run just frontend in development mode
+make backend           # Run just backend in development mode
+make test              # Run frontend and backend tests
 ```
 
 ### Monitoring Your Deployment
