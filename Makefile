@@ -1,4 +1,9 @@
-.PHONY: dev frontend backend test deploy-minikube build-images load-images update-helm
+.PHONY: dev frontend backend test deploy-minikube build-images load-images update-helm setup minikube-cd clean-old-scripts
+
+# Default domain for local access
+DOMAIN=1ex.hire.roie.local
+# Domain for basic minikube setup
+MINIKUBE_DOMAIN=minikube.local
 
 frontend:
 	cd frontend && bun run dev &
@@ -24,7 +29,20 @@ load-images: build-images
 update-helm:
 	cd charts/umbrella && helm dependency update
 
-# Deploy to Minikube
+# --- Combined Minikube Setup & Access ---
+# This script checks Minikube, ingress, updates hosts for both domains,
+# and provides instructions for the tunnel. Requires Admin/sudo.
+minikube-setup:
+ifeq ($(OS),Windows_NT)
+	@echo "Running combined Windows setup script (Requires Admin privileges)..."
+	@cmd /c scripts\\minikube-setup-windows.bat
+else
+	@echo "Running combined Linux/macOS setup script (Requires sudo privileges)..."
+	@echo "You may be prompted for your sudo password to update /etc/hosts."
+	@sudo bash scripts/minikube-setup-linux-macos.sh
+endif
+
+# Deploy to Minikube (using minikube.local domain)
 deploy-minikube: load-images update-helm
 	helm upgrade --install umbrella ./charts/umbrella \
 	  --set backend.image.repository=localhost:5000/backend \
@@ -33,11 +51,13 @@ deploy-minikube: load-images update-helm
 	  --set frontend.image.repository=localhost:5000/frontend \
 	  --set frontend.image.tag=latest \
 	  --set frontend.image.pullPolicy=Never \
-	  --set global.domain=minikube.local \
+	  --set global.domain=$(MINIKUBE_DOMAIN) \
 	  --set global.environment=development
 
 # Full CD process for Minikube
 minikube-cd: deploy-minikube
 	@echo "Application deployed to Minikube!"
-	@echo "Access the application at http://minikube.local/ (make sure minikube.local is in your hosts file)"
-	@echo "To start the tunnel if needed, run: minikube tunnel"
+	@echo "Run 'make setup' first if you haven't configured Minikube and hosts files."
+	@echo "Access the application at http://$(MINIKUBE_DOMAIN)/"
+	@echo "For access from other devices on your network (http://$(DOMAIN)/), follow the tunnel instructions from 'make setup'."
+
