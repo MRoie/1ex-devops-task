@@ -16,6 +16,15 @@ describe('App Component', () => {
     expect(screen.getByText('DevOps Home Assignment – Simple user management')).toBeDefined();
   });
 
+  it('renders the logo banner', () => {
+    render(<App />);
+    
+    // Check if the logo image is rendered
+    const logoImage = screen.getByAltText('1etx Logo');
+    expect(logoImage).toBeDefined();
+    expect(logoImage.getAttribute('src')).toBe('https://1etx.com/wp-content/uploads/2022/10/logo.svg');
+  });
+
   it('renders the UserList component', () => {
     render(<App />);
     
@@ -29,5 +38,9 @@ describe('App Component', () => {
     // Check if the basic structure exists
     expect(container.querySelector('header')).toBeDefined();
     expect(container.querySelector('main')).toBeDefined();
+    
+    // Check for the hero banner section
+    const heroBanner = container.querySelector('div.bg-\\[\\#001424\\].w-full');
+    expect(heroBanner).toBeDefined();
   });
 });

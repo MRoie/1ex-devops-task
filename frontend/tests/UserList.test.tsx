@@ -40,6 +40,8 @@ describe('UserList Component', () => {
     vi.clearAllMocks();
     // Mock successful fetchUsers call by default
     (api.fetchUsers as any).mockResolvedValue(mockUsers);
+    // Spy on console.error for testing error handling
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   it('displays loading state initially', () => {
@@ -62,17 +64,27 @@ describe('UserList Component', () => {
     expect(api.fetchUsers).toHaveBeenCalledTimes(1);
   });
 
-  it('handles API errors gracefully', async () => {
+  it('handles API errors by showing empty state instead of error message', async () => {
     // Mock API error response
     (api.fetchUsers as any).mockRejectedValue(new api.ApiError('Server error', 500));
     
     render(<UserList />);
     
-    // Wait for error message
+    // Wait for component to finish loading
     await waitFor(() => {
-      expect(screen.getByText(/failed to load users/i)).toBeInTheDocument();
-      expect(screen.getByText(/server error/i)).toBeInTheDocument();
+      expect(screen.queryByText(/loading users/i)).not.toBeInTheDocument();
     });
+    
+    // Should not show error message
+    expect(screen.queryByText(/failed to load users/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/server error/i)).not.toBeInTheDocument();
+    
+    // Should show empty state
+    expect(screen.getByText(/no users found/i)).toBeInTheDocument();
+    expect(screen.getByText(/get started by creating your first user/i)).toBeInTheDocument();
+    
+    // Should log the error to console
+    expect(console.error).toHaveBeenCalled();
   });
 
   it('shows Add User form when button is clicked', async () => {
@@ -145,7 +157,7 @@ describe('UserList Component', () => {
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
   });
 
-  it('shows empty state when no users exist', async () => {
+  it('shows enhanced empty state when no users exist', async () => {
     // Mock empty users array
     (api.fetchUsers as any).mockResolvedValue([]);
     
@@ -156,7 +168,28 @@ describe('UserList Component', () => {
       expect(screen.queryByText(/loading users/i)).not.toBeInTheDocument();
     });
     
-    // Should show empty state message
+    // Should show enhanced empty state message and button
     expect(screen.getByText(/no users found/i)).toBeInTheDocument();
+    expect(screen.getByText(/get started by creating your first user/i)).toBeInTheDocument();
+    expect(screen.getByText('Create New User')).toBeInTheDocument();
+  });
+
+  it('shows user form when clicking create button in empty state', async () => {
+    // Mock empty users array
+    (api.fetchUsers as any).mockResolvedValue([]);
+    
+    render(<UserList />);
+    
+    // Wait for component to load
+    await waitFor(() => {
+      expect(screen.queryByText(/loading users/i)).not.toBeInTheDocument();
+    });
+    
+    // Click the "Create New User" button in the empty state
+    fireEvent.click(screen.getByText('Create New User'));
+    
+    // UserForm should appear
+    // We look for elements that would be in the form
+    expect(screen.getByText('Add New User')).toBeInTheDocument();
   });
 });
